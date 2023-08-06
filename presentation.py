@@ -7,6 +7,8 @@ from tkinter.filedialog import askopenfilename
 from sklearn.linear_model import LogisticRegression
 import pickle
 from tkinter import ttk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 
 # Load the pre-trained model
 pipe = pickle.load(open('pipe.pkl', 'rb'))
@@ -33,24 +35,30 @@ x_position = (screen_width // 2) - (window_width // 2)
 y_position = (screen_height // 2) - (window_height // 2)
 main.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 
-# Function to create the probability bar
-def create_probability_bar(win_prob, loss_prob):
-    plt.clf()  # Clear the previous plot (if any)
-    labels = [bat.get(), bowl.get()]
-    probabilities = [round(win_prob * 100, 2), round(loss_prob * 100, 2)]
+def plot_probabilities(prob_win, prob_loss):
+    teams = [bat.get(), bowl.get()]
+    probabilities = [prob_win, prob_loss]
 
-    plt.bar(labels, probabilities, color=['green', 'red'])
-    plt.ylabel('Winning Probability (%)')
-    plt.title('Winning Probability of Teams')
-    plt.ylim(0, 100)  # Set the y-axis range to 0-100
+    plt.figure(figsize=(6, 4))  # Decrease the figsize to (6, 4)
+    bars = plt.bar(teams, probabilities, color=['green', 'red'], width=0.4)
+    plt.xlabel('Team')
+    plt.ylabel('Probability')
+    plt.title('Win Probability')
 
-    # Add text annotations to the bars
-    for i, prob in enumerate(probabilities):
-        plt.text(i, prob, f'{prob}%', ha='center', va='bottom', fontweight='bold', fontsize=14)
+    # Set the y-axis limits to be the same for both teams
+    plt.ylim(0, 1)
 
-    plt.show()  # Display the plot
+    for bar, prob in zip(bars, probabilities):
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width() / 2, height, f'{round(prob*100, 2)}%', ha='center', va='bottom')
 
-# Function to predict the winning probability
+    # Create a FigureCanvasTkAgg object to display the plot inside a Tkinter window
+    canvas = FigureCanvasTkAgg(plt.gcf(), master=main)
+    canvas.draw()
+
+    # Position the canvas at the top-right corner
+    canvas.get_tk_widget().place(x=550, y=10)  # Adjust x and y coordinates as per your preference
+
 def predict_probability():
     try:
         total_runs = int(entry1.get())
@@ -98,8 +106,7 @@ def predict_probability():
 
         header_text_bowl = f"{bowl.get()} - {round(loss * 100, 2)}%"
         header_label_bowl.config(text=header_text_bowl)
-
-        create_probability_bar(win, loss)  # Call the function to create the probability bar
+        plot_probabilities(win, loss)
 
     except ValueError as ve:
         # Display error message
